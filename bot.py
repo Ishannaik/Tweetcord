@@ -57,16 +57,21 @@ async def handle_web(request):
     """
     return web.Response(text=html_content, content_type='text/html')
 
-async def run_web():
+async def start_web_server():
     app = web.Application()
     app.router.add_get('/', handle_web)
+    port = int(os.environ.get('PORT', 10000))
     runner = web.AppRunner(app)
     await runner.setup()
-    # Explicitly use port 10000 as required by Render
-    port = int(os.environ.get('PORT', 10000))
     site = web.TCPSite(runner, '0.0.0.0', port)
     await site.start()
-    log.info(f"Web server started on port {port}")
+    log.info(f"Web server started and bound to port {port}")
+    return runner
+
+async def run_bot():
+    discord.utils.setup_logging()
+    async with bot:
+        await bot.start(os.getenv('BOT_TOKEN'))
 
 @bot.event
 async def on_ready():
@@ -167,7 +172,16 @@ async def on_command_error(ctx: commands.context.Context, error: commands.errors
     log.warning(f'an error occurred but was handled by the command error handler, error message : {error}')
 
 
+async def main():
+    # Start web server first and ensure it's running
+    runner = await start_web_server()
+    try:
+        # Then start the bot
+        await run_bot()
+    finally:
+        await runner.cleanup()
+
+
 if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    loop.create_task(run_web())
-    bot.run(os.getenv('BOT_TOKEN'))
+    # Use asyncio.run() to properly handle the async main function
+    asyncio.run(main())
