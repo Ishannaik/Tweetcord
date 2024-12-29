@@ -1,7 +1,7 @@
 import asyncio
 import os
 import sys
-
+from aiohttp import web
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -20,6 +20,18 @@ load_dotenv()
 
 bot = commands.Bot(command_prefix=configs['prefix'], intents=discord.Intents.all())
 
+# Web server handler
+async def handle_web(request):
+    return web.Response(text="Bot is running!")
+
+async def run_web():
+    app = web.Application()
+    app.router.add_get('/', handle_web)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, '0.0.0.0', int(os.environ.get('PORT', 8080)))
+    await site.start()
+    log.info(f"Web server started on port {os.environ.get('PORT', 8080)}")
 
 @bot.event
 async def on_ready():
@@ -121,4 +133,6 @@ async def on_command_error(ctx: commands.context.Context, error: commands.errors
 
 
 if __name__ == '__main__':
+    loop = asyncio.get_event_loop()
+    loop.create_task(run_web())
     bot.run(os.getenv('BOT_TOKEN'))
