@@ -20,18 +20,53 @@ load_dotenv()
 
 bot = commands.Bot(command_prefix=configs['prefix'], intents=discord.Intents.all())
 
-# Web server handler
+# Web server handler with HTML content
 async def handle_web(request):
-    return web.Response(text="Bot is running!")
+    html_content = """
+    <!DOCTYPE html>
+    <html>
+        <head>
+            <title>Discord Bot Status</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 40px;
+                    line-height: 1.6;
+                    background: #f5f5f5;
+                }
+                .container {
+                    background: white;
+                    padding: 20px;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    max-width: 600px;
+                    margin: 0 auto;
+                }
+                h1 { color: #5865F2; }
+                .status { color: #43B581; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>Discord Bot Status</h1>
+                <p class="status">✅ Bot is running!</p>
+                <p>This is the status page for the Discord bot.</p>
+            </div>
+        </body>
+    </html>
+    """
+    return web.Response(text=html_content, content_type='text/html')
 
 async def run_web():
     app = web.Application()
     app.router.add_get('/', handle_web)
     runner = web.AppRunner(app)
     await runner.setup()
-    site = web.TCPSite(runner, '0.0.0.0', int(os.environ.get('PORT', 8080)))
+    # Explicitly use port 10000 as required by Render
+    port = int(os.environ.get('PORT', 10000))
+    site = web.TCPSite(runner, '0.0.0.0', port)
     await site.start()
-    log.info(f"Web server started on port {os.environ.get('PORT', 8080)}")
+    log.info(f"Web server started on port {port}")
 
 @bot.event
 async def on_ready():
